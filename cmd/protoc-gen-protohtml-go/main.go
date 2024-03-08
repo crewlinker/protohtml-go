@@ -4,10 +4,12 @@ package main
 import (
 	"flag"
 	"fmt"
+	"io"
 	"log"
 	"os"
 	"path/filepath"
 
+	"github.com/crewlinker/protohtml-go/internal/generate"
 	"google.golang.org/protobuf/compiler/protogen"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/pluginpb"
@@ -29,6 +31,19 @@ func run(plugin *protogen.Plugin) error {
 	if *snapshots {
 		if err := snapshot(plugin.Request); err != nil {
 			return fmt.Errorf("failed to snapshot: %w", err)
+		}
+	}
+
+	files, err := generate.Generate(plugin)
+	if err != nil {
+		return fmt.Errorf("failed to generate: %w", err)
+	}
+
+	for name, pkg := range files {
+		genf := plugin.NewGeneratedFile(name, pkg.GoImportPath)
+
+		if _, err := io.Copy(genf, pkg.Result); err != nil {
+			return fmt.Errorf("failed to copy code generation results into file: %w", err)
 		}
 	}
 
