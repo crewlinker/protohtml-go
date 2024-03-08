@@ -3,11 +3,18 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"log"
+	"os"
+	"path/filepath"
 
 	"google.golang.org/protobuf/compiler/protogen"
+	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/pluginpb"
 )
+
+// snapshot flag.
+var snapshots = flag.Bool("snapshots", false, "enable snapshots to be saved for testing")
 
 // programs entrypoint.
 func main() {
@@ -18,7 +25,36 @@ func main() {
 func run(plugin *protogen.Plugin) error {
 	plugin.SupportedFeatures = uint64(pluginpb.CodeGeneratorResponse_FEATURE_PROTO3_OPTIONAL)
 
-	log.Println("hello, world")
+	// write snapshots if enabled (for testing)
+	if *snapshots {
+		if err := snapshot(plugin.Request); err != nil {
+			return fmt.Errorf("failed to snapshot: %w", err)
+		}
+	}
+
+	return nil
+}
+
+// snapshot requests in the directories the generate for.
+func snapshot(req *pluginpb.CodeGeneratorRequest) error {
+	const perms = 0o600
+
+	dir := filepath.Dir(req.GetFileToGenerate()[0])
+	if dir == "phtml/v1" {
+		return nil // skip for our own plugin options
+	}
+
+	fname := filepath.Join(dir, "phtml_request.bin")
+	log.Printf("writing request snapshot to: %s", fname)
+
+	bin, err := proto.Marshal(req)
+	if err != nil {
+		return fmt.Errorf("failed to marshal request: %w", err)
+	}
+
+	if err := os.WriteFile(fname, bin, perms); err != nil {
+		return fmt.Errorf("failed to write snapshot file: %w", err)
+	}
 
 	return nil
 }

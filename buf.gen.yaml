@@ -10,3 +10,7 @@ plugins:
     out: .
     opt: paths=source_relative
     path: ["go", "run", "google.golang.org/protobuf/cmd/protoc-gen-go"]
+  - name: protohtml-go
+    out: .
+    opt: paths=source_relative,snapshots=true
+    path: ["go", "run", "./cmd/protoc-gen-protohtml-go"]

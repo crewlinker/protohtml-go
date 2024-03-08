@@ -4,9 +4,12 @@ package phtml.v1;
 import "google/protobuf/descriptor.proto";
 
 // options for defining a query.
-message RequestOptions {}
+message RouteOptions {
+  // pattern for go 1.22 router.
+  optional string pattern = 1;
+}
 
 // message options
 extend google.protobuf.MessageOptions {
-  optional RequestOptions req = 1199;
+  optional RouteOptions route = 1199;
 }

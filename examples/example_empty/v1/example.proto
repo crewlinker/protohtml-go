@@ -1,0 +1,6 @@
+syntax = "proto3";
+
+package examples.example_empty.v1;
+
+// example that actually doesn't use protohtml at all.
+message SomeMessage {}

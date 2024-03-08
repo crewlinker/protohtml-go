@@ -1,0 +1,10 @@
+syntax = "proto3";
+
+package examples.example1.v1;
+
+import "phtml/v1/options.proto";
+
+// Index route
+message Index {
+  option (phtml.v1.route).pattern = "/{$}";
+}
