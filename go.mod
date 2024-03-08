@@ -1,4 +1,4 @@
-module github.com/crewlinker/protohtml
+module github.com/crewlinker/protohtml-go
 
 go 1.22.0
 
