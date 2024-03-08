@@ -3,13 +3,34 @@ package phtml.v1;
 
 import "google/protobuf/descriptor.proto";
 
-// options for defining a query.
+// options for defining a route.
 message RouteOptions {
   // pattern for go 1.22 router.
   optional string pattern = 1;
 }
 
-// message options
-extend google.protobuf.MessageOptions {
+// Source of a request parameter.
+enum Source {
+  // when the source is not specified
+  SOURCE_UNSPECIFIED = 0;
+  // source is the url path
+  SOURCE_PATH = 1;
+  // source is the url path
+  SOURCE_QUERY = 2;
+}
+
+// options for configuring parsing a request.
+message ParamFieldOptions {
+  // in determines the source of the paramter.
+  optional Source source = 1;
+}
+
+// field options
+extend google.protobuf.FieldOptions {
+  optional ParamFieldOptions param = 1198;
+}
+
+// method options
+extend google.protobuf.MethodOptions {
   optional RouteOptions route = 1199;
 }

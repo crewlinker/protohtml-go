@@ -4,7 +4,22 @@ package examples.example1.v1;
 
 import "phtml/v1/options.proto";
 
-// Index route
-message Index {
-  option (phtml.v1.route).pattern = "/{$}";
+// request for a single user
+message ShowOneUserRequest {
+  // user_id of the user to be shown, taken from the url parameters.
+  string user_id = 1 [(phtml.v1.param).source = SOURCE_PATH];
+  // show_address, taken from the query parameters.
+  bool show_address = 2 [(phtml.v1.param).source = SOURCE_QUERY];
+}
+
+// response from a single user.
+message ShowOneUserResponse {}
+
+// MovrService handles request for a fiction ride-sharing service. Taken from:
+// https://www.cockroachlabs.com/docs/stable/movr
+service MovrService {
+  // Show one user renders a page for a single user
+  rpc ShowOneUser(ShowOneUserRequest) returns (ShowOneUserResponse) {
+    option (phtml.v1.route).pattern = "/user/{id}";
+  }
 }

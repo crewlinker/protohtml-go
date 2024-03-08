@@ -1,6 +1,8 @@
 syntax = "proto3";
 
+// If we don't use any of the phtml options on our methods
+// nothing will be generated.
 package examples.example_empty.v1;
 
-// example that actually doesn't use protohtml at all.
+// some message
 message SomeMessage {}

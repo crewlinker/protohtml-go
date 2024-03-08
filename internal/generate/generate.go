@@ -26,7 +26,7 @@ func generatePackage(w io.Writer, pkg *Package) error {
 
 // Generate generates protohtml code.
 func Generate(plugin *protogen.Plugin) (map[string]*Package, error) {
-	blueprint, err := preGenerate(plugin)
+	blueprint, err := preGenPlugin(plugin)
 	if err != nil {
 		return nil, fmt.Errorf("failed to pre-generate: %w", err)
 	}

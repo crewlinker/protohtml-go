@@ -4,6 +4,9 @@
 // 	protoc        (unknown)
 // source: examples/example_empty/v1/example.proto
 
+// If we don't use any of the phtml options on our methods
+// nothing will be generated.
+
 package example_emptyv1
 
 import (
@@ -20,7 +23,7 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-// example that actually doesn't use protohtml at all.
+// some message
 type SomeMessage struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
