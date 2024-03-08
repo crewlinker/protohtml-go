@@ -4,13 +4,11 @@ package main
 import (
 	"fmt"
 	"os"
-	"path/filepath"
 	"regexp"
 	"strings"
 
 	"github.com/magefile/mage/mg"
 	"github.com/magefile/mage/sh"
-	"github.com/samber/lo"
 )
 
 // init performs some sanity checks before running anything.
@@ -73,17 +71,11 @@ func (Dev) Release(version string) error {
 		return errVersionFormat
 	}
 
-	// get the latest migration version
-	var schemaVersion string
-	lo.ForEach(lo.Must(filepath.Glob("migrations/*_*.sql")), func(name string, _ int) {
-		schemaVersion, _, _ = strings.Cut(filepath.Base(name), "_")
-	})
-
-	if err := sh.Run("git", "tag", version+"-"+schemaVersion); err != nil {
+	if err := sh.Run("git", "tag", version); err != nil {
 		return fmt.Errorf("failed to tag version: %w", err)
 	}
 
-	if err := sh.Run("git", "push", "origin", version+"-"+schemaVersion); err != nil {
+	if err := sh.Run("git", "push", "origin", version); err != nil {
 		return fmt.Errorf("failed to push version tag: %w", err)
 	}
 
