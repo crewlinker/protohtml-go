@@ -19,3 +19,11 @@
 
 # Go workspace file
 go.work
+.env.*
+
+test-report.xml
+.env
+# misc
+.DS_Store
+*.pem
+*.env
