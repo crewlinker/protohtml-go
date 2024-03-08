@@ -1,4 +1,6 @@
-# protohtml-go
+# protohtml-go 
+[![Check](https://github.com/crewlinker/protohtml-go/actions/workflows/checks.yml/badge.svg)](https://github.com/crewlinker/protohtml-go/actions/workflows/checks.yml)
+
 Protobuf code generation for type-safe routing, links generation and HTML rendering
 
 ## Features
