@@ -37,7 +37,7 @@ func Generate(plugin *protogen.Plugin) (map[string]*Package, error) {
 			continue // skip if empty.
 		}
 
-		fname := filepath.Join(pkg.Dir, string(pkg.GoPackageName)+"phtml", "phtml.gen.go")
+		fname := filepath.Join(pkg.Dir, string(pkg.GoPackageName), packageNameSuffix+".gen.go")
 		fdata := bytes.NewBuffer(nil)
 
 		if err := generatePackage(fdata, pkg); err != nil {

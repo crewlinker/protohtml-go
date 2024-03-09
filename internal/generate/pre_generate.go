@@ -5,8 +5,12 @@ import (
 	"fmt"
 	"path/filepath"
 
+	"github.com/crewlinker/protohtml-go/internal/httppattern"
 	"google.golang.org/protobuf/compiler/protogen"
 )
+
+// packageNameSuffix determines the sub-package's full name.
+const packageNameSuffix = "phtml"
 
 // Blueprint defines the code generation.
 type Blueprint struct {
@@ -39,7 +43,7 @@ type Service struct {
 // by the generated handlers.
 type Method struct {
 	GoName  string
-	Pattern string
+	Pattern *httppattern.Pattern
 }
 
 // preGen a service.
@@ -62,10 +66,16 @@ func preGenService(pkg *Package, genSvc *protogen.Service) error {
 			pkg.Services[svc.GoName] = svc
 		}
 
+		// parse pattern
+		pat, err := httppattern.ParsePattern(ropts.GetPattern())
+		if err != nil {
+			return fmt.Errorf("[%s] failed to parse route pattern '%s': %w", genMethod.GoName, ropts.GetPattern(), err)
+		}
+
 		// add our representation of a method.
 		svc.Methods[genMethod.GoName] = &Method{
 			GoName:  genMethod.GoName,
-			Pattern: ropts.GetPattern(),
+			Pattern: pat,
 		}
 	}
 
@@ -87,7 +97,7 @@ func preGenPlugin(plugin *protogen.Plugin) (*Blueprint, error) {
 		if !ok {
 			pkg = &Package{
 				Dir:           dir,
-				GoPackageName: plugf.GoPackageName,
+				GoPackageName: plugf.GoPackageName + packageNameSuffix,
 				GoImportPath:  plugf.GoImportPath,
 				Services:      map[string]*Service{},
 			}

@@ -59,6 +59,11 @@ func (Dev) Generate() error {
 		return fmt.Errorf("failed to generate protobuf: %w", err)
 	}
 
+	// generate rpc
+	if err := sh.Run("templ", "generate"); err != nil {
+		return fmt.Errorf("failed to generate protobuf: %w", err)
+	}
+
 	return nil
 }
 

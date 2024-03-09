@@ -10,3 +10,4 @@ Protobuf code generation for type-safe routing, links generation and HTML render
 - Generates type-safe generation of links
 - Renders HTML using the Templ templates
 - Validation using https://github.com/bufbuild/protovalidate-go
+- Can use any standard middleware
