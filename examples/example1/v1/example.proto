@@ -10,6 +10,8 @@ message ShowOneUserRequest {
   string user_id = 1 [(phtml.v1.param).source = SOURCE_PATH];
   // show_address, taken from the query parameters.
   bool show_address = 2 [(phtml.v1.param).source = SOURCE_QUERY];
+  // nr_of_addrs from the form-encoded body.
+  int64 nr_of_addrs = 3 [(phtml.v1.param).source = SOURCE_FORM];
 }
 
 // response from a single user.

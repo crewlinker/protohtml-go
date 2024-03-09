@@ -21,3 +21,18 @@ func routeOpts(m *protogen.Method) *phtmlv1.RouteOptions {
 
 	return ext
 }
+
+// paramOpts returns our plugin specific field options.
+func paramOpts(m *protogen.Field) *phtmlv1.ParamFieldOptions {
+	opts, hasOpts := m.Desc.Options().(*descriptorpb.FieldOptions)
+	if !hasOpts {
+		return nil
+	}
+
+	ext, hasOpts := proto.GetExtension(opts, phtmlv1.E_Param).(*phtmlv1.ParamFieldOptions)
+	if !hasOpts {
+		return nil
+	}
+
+	return ext
+}

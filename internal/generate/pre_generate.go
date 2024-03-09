@@ -6,7 +6,9 @@ import (
 	"path/filepath"
 
 	"github.com/crewlinker/protohtml-go/internal/httppattern"
+	phtmlv1 "github.com/crewlinker/protohtml-go/phtml/v1"
 	"google.golang.org/protobuf/compiler/protogen"
+	"google.golang.org/protobuf/reflect/protoreflect"
 )
 
 // packageNameSuffix determines the sub-package's full name.
@@ -24,7 +26,9 @@ type Package struct {
 	GoPackageName protogen.GoPackageName
 	Result        *bytes.Buffer
 
-	Services map[string]*Service
+	Services  map[string]*Service
+	Requests  map[protogen.GoIdent]*Request
+	Responses map[protogen.GoIdent]*Response
 }
 
 // IsEmpty returns true if the package definition shows
@@ -33,21 +37,94 @@ func (p *Package) IsEmpty() bool {
 	return len(p.Services) == 0
 }
 
-// Service of routes.
-type Service struct {
-	GoName  string
-	Methods map[string]*Method
+// Param describes a request parameter.
+type Param struct {
+	GoName string
+	Source phtmlv1.Source
 }
 
-// Method describes a route that is served
+// Request message.
+type Request struct {
+	GoIdent protogen.GoIdent
+	Params  map[protoreflect.Name]*Param
+}
+
+// Response message.
+type Response struct {
+	GoIdent protogen.GoIdent
+}
+
+// Service groups a number of routes.
+type Service struct {
+	GoName string
+	Routes map[string]*Route
+}
+
+// Route describes a route that is served
 // by the generated handlers.
-type Method struct {
-	GoName  string
-	Pattern *httppattern.Pattern
+type Route struct {
+	GoName      string
+	Pattern     *httppattern.Pattern
+	InputIdent  protogen.GoIdent
+	OutputIdent protogen.GoIdent
+}
+
+// preGenRequest pre-generates any request message.
+func preGenRequest(_ *Package, inp *protogen.Message) (*Request, error) {
+	req := &Request{
+		GoIdent: inp.GoIdent,
+		Params:  map[protoreflect.Name]*Param{},
+	}
+
+	for _, fld := range inp.Fields {
+		popts := paramOpts(fld)
+		if popts == nil {
+			continue // not a field for a parameter.
+		}
+
+		req.Params[fld.Desc.Name()] = &Param{
+			GoName: fld.GoName,
+			Source: popts.GetSource(),
+		}
+	}
+
+	return req, nil
+}
+
+// preGenMethod pre-generates any method.
+func preGenMethod(pkg *Package, genMethod *protogen.Method, ropts *phtmlv1.RouteOptions) (route *Route, err error) {
+	pat, err := httppattern.ParsePattern(ropts.GetPattern())
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse route pattern '%s': %w",
+			ropts.GetPattern(), err)
+	}
+
+	req, ok := pkg.Requests[genMethod.Input.GoIdent]
+	if !ok {
+		req, err = preGenRequest(pkg, genMethod.Input)
+		if err != nil {
+			return nil, fmt.Errorf("failed to pre-generate request from input: %w", err)
+		}
+
+		pkg.Requests[genMethod.Input.GoIdent] = req
+	}
+
+	resp, ok := pkg.Responses[genMethod.Output.GoIdent]
+	if !ok {
+		resp = &Response{GoIdent: genMethod.Output.GoIdent}
+		pkg.Responses[genMethod.Output.GoIdent] = resp
+	}
+
+	return &Route{
+		GoName:      genMethod.GoName,
+		Pattern:     pat,
+		InputIdent:  req.GoIdent,
+		OutputIdent: resp.GoIdent,
+	}, nil
 }
 
 // preGen a service.
-func preGenService(pkg *Package, genSvc *protogen.Service) error {
+func preGenService(pkg *Package, genSvc *protogen.Service) (err error) {
 	for _, genMethod := range genSvc.Methods {
 		ropts := routeOpts(genMethod)
 		if ropts == nil {
@@ -59,23 +136,16 @@ func preGenService(pkg *Package, genSvc *protogen.Service) error {
 		svc, ok := pkg.Services[genSvc.GoName]
 		if !ok {
 			svc = &Service{
-				GoName:  genSvc.GoName,
-				Methods: map[string]*Method{},
+				GoName: genSvc.GoName,
+				Routes: map[string]*Route{},
 			}
 
 			pkg.Services[svc.GoName] = svc
 		}
 
-		// parse pattern
-		pat, err := httppattern.ParsePattern(ropts.GetPattern())
+		svc.Routes[genMethod.GoName], err = preGenMethod(pkg, genMethod, ropts)
 		if err != nil {
-			return fmt.Errorf("[%s] failed to parse route pattern '%s': %w", genMethod.GoName, ropts.GetPattern(), err)
-		}
-
-		// add our representation of a method.
-		svc.Methods[genMethod.GoName] = &Method{
-			GoName:  genMethod.GoName,
-			Pattern: pat,
+			return fmt.Errorf("[%s] failed to pre-gen method: %w", genMethod.GoName, err)
 		}
 	}
 
@@ -100,6 +170,8 @@ func preGenPlugin(plugin *protogen.Plugin) (*Blueprint, error) {
 				GoPackageName: plugf.GoPackageName + packageNameSuffix,
 				GoImportPath:  plugf.GoImportPath,
 				Services:      map[string]*Service{},
+				Requests:      map[protogen.GoIdent]*Request{},
+				Responses:     map[protogen.GoIdent]*Response{},
 			}
 		}
 

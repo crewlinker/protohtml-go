@@ -23,6 +23,8 @@ enum Source {
   SOURCE_PATH = 1;
   // source is the url path
   SOURCE_QUERY = 2;
+  // is the the body with form encoding
+  SOURCE_FORM = 3;
 }
 
 // options for configuring parsing a request.
