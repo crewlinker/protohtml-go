@@ -17,22 +17,15 @@ type MovrServiceM interface {
 
 // MovrServiceHandlerSetM surfaces the logic for resilient HTML serving.
 type MovrServiceHandlerSetM struct {
+	base *phtml.PHTML
 	impl MovrServiceM
-	dec  phtml.ValuesDecoder
-	enc  phtml.ValuesEncoder
 }
 
 // NewMovrServiceHandlerSetM inits the handler set for our service.
-func NewMovrServiceHandlerSetM(
-	impl MovrServiceM,
-	dec phtml.ValuesDecoder,
-	enc phtml.ValuesEncoder,
-) *MovrServiceHandlerSetM {
+func NewMovrServiceHandlerSetM(impl MovrServiceM) *MovrServiceHandlerSetM {
 	return &MovrServiceHandlerSetM{
 		impl: impl,
-		dec:  dec,
-		enc:  enc,
-		// @TODO add "renderer" registry
+		base: phtml.New(),
 	}
 }
 
@@ -46,7 +39,7 @@ func (hs *MovrServiceHandlerSetM) ShowOneUserHandler() http.Handler {
 
 		var req example1v1.ShowOneUserRequest
 
-		if err := phtml.ParseRequest(hs.dec, &req, r, "user_id"); err != nil {
+		if err := phtml.ParseRequest(hs.base.ValuesDecoder(), &req, r, "user_id"); err != nil {
 			// @TODO configure "bad request" error handler (or type)
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
@@ -70,10 +63,14 @@ func (hs *MovrServiceHandlerSetM) ShowOneUserHandler() http.Handler {
 }
 
 // @TODO at least partially generic, move to a shared package. @TODO, how to pass-in/handle optional parameters?
-func (hs *MovrServiceHandlerSetM) ShowOneUserURL(x *example1v1.ShowOneUserRequest) (string, error) {
-	uri, err := phtml.GenerateURL(hs.enc, x, parsedPatterns["MovrService.ShowOneUser"])
+func (hs *MovrServiceHandlerSetM) ShowOneUserURL(userId string, xs ...*example1v1.ShowOneUserRequest) (string, error) {
+	x := phtml.FirstInitOrPanic(xs...)
+
+	x.UserId = userId
+
+	uri, err := phtml.GenerateURL(hs.base.ValuesEncoder(), x, parsedPatterns["MovrService.ShowOneUser"])
 	if err != nil {
-		return "", fmt.Errorf("faile to generate URL: %w", err)
+		return "", fmt.Errorf("failed to generate URL: %w", err)
 	}
 
 	return uri, nil

@@ -51,4 +51,18 @@ var _ = Describe("phtml", func() {
 		Expect(err).ToNot(HaveOccurred())
 		Expect(uri).To(Equal(`/users/1223-1111?show_address=true`))
 	})
+
+	It("should use FirstInitOrPanic corrrectly", func() {
+		v1 := phtml.FirstInitOrPanic[example1v1.ShowOneUserRequest](nil)
+		Expect(v1.GetUserId()).To(Equal(""))
+
+		v2 := phtml.FirstInitOrPanic(&example1v1.ShowOneUserRequest{UserId: "foo"})
+		Expect(v2.GetUserId()).To(Equal("foo"))
+
+		Expect(func() {
+			phtml.FirstInitOrPanic(
+				&example1v1.ShowOneUserRequest{},
+				&example1v1.ShowOneUserRequest{})
+		}).To(PanicWith(MatchRegexp(`too many elements`)))
+	})
 })

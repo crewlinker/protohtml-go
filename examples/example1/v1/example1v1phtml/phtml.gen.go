@@ -2,12 +2,79 @@
 
 package example1v1phtml
 
-import httppattern "github.com/crewlinker/protohtml-go/internal/httppattern"
+import (
+	v1 "github.com/crewlinker/protohtml-go/examples/example1/v1"
+	httppattern "github.com/crewlinker/protohtml-go/internal/httppattern"
+	phtml "github.com/crewlinker/protohtml-go/phtml"
+)
 
 // parsedPatterns hold all parsed route patterns, done once when the package initializes
 var parsedPatterns = map[string]*httppattern.Pattern{}
 
 func init() {
+	parsedPatterns["AnotherService.ShowOneAddress"] = httppattern.MustParsePattern("/addr/{addr_id}")
 	parsedPatterns["MovrService.ShowOneUser"] = httppattern.MustParsePattern("/user/{user_id}")
 	parsedPatterns["MovrService.ShowUserAddress"] = httppattern.MustParsePattern("/user/{user_id}/address/{addr_id}")
+}
+
+// AnotherService describes the route handler implementation.
+type AnotherService interface{}
+
+// AnotherServiceHandlers provides methods for serving our routes.
+type AnotherServiceHandlers struct {
+	impl  AnotherService
+	phtml *phtml.PHTML
+}
+
+// NewAnotherServiceHandlers constructs the handler set.
+func NewAnotherServiceHandlers(impl AnotherService) *AnotherServiceHandlers {
+	return &AnotherServiceHandlers{
+		impl:  impl,
+		phtml: phtml.New(),
+	}
+}
+
+// ShowOneAddressURL generates a url given the parameterse.
+func (h *AnotherServiceHandlers) ShowOneAddressURL(addrId string) (string, error) {
+	x := phtml.FirstInitOrPanic[v1.ShowOneAddressRequest]()
+	{
+		x.AddrId = addrId
+	}
+	return phtml.GenerateURL(h.phtml.ValuesEncoder(), x, parsedPatterns["AnotherService.ShowOneAddress"])
+}
+
+// MovrService describes the route handler implementation.
+type MovrService interface{}
+
+// MovrServiceHandlers provides methods for serving our routes.
+type MovrServiceHandlers struct {
+	impl  MovrService
+	phtml *phtml.PHTML
+}
+
+// NewMovrServiceHandlers constructs the handler set.
+func NewMovrServiceHandlers(impl MovrService) *MovrServiceHandlers {
+	return &MovrServiceHandlers{
+		impl:  impl,
+		phtml: phtml.New(),
+	}
+}
+
+// ShowOneUserURL generates a url given the parameterse.
+func (h *MovrServiceHandlers) ShowOneUserURL(userId string, opt ...*v1.ShowOneUserRequest) (string, error) {
+	x := phtml.FirstInitOrPanic[v1.ShowOneUserRequest](opt...)
+	{
+		x.UserId = userId
+	}
+	return phtml.GenerateURL(h.phtml.ValuesEncoder(), x, parsedPatterns["MovrService.ShowOneUser"])
+}
+
+// ShowUserAddressURL generates a url given the parameterse.
+func (h *MovrServiceHandlers) ShowUserAddressURL(userId string, addrId string) (string, error) {
+	x := phtml.FirstInitOrPanic[v1.ShowUserAddressRequest]()
+	{
+		x.UserId = userId
+		x.AddrId = addrId
+	}
+	return phtml.GenerateURL(h.phtml.ValuesEncoder(), x, parsedPatterns["MovrService.ShowUserAddress"])
 }

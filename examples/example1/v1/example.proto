@@ -50,3 +50,20 @@ service MovrService {
     option (phtml.v1.route).pattern = "/user/{user_id}/address/{addr_id}";
   }
 }
+
+// Request to show user address
+message ShowOneAddressRequest {
+  // addr id
+  string addr_id = 1 [(phtml.v1.param).source = SOURCE_PATH];
+}
+
+// Request to show user response
+message ShowOneAddressResponse {}
+
+// AnotherServices handles provides another service
+service AnotherService {
+  // Show one user renders a page for a single user
+  rpc ShowOneAddress(ShowOneAddressRequest) returns (ShowOneAddressResponse) {
+    option (phtml.v1.route).pattern = "/addr/{addr_id}";
+  }
+}

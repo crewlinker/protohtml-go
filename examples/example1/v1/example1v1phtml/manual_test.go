@@ -8,7 +8,6 @@ import (
 
 	example1v1 "github.com/crewlinker/protohtml-go/examples/example1/v1"
 	"github.com/crewlinker/protohtml-go/examples/example1/v1/example1v1phtml"
-	"github.com/go-playground/form/v4"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
@@ -22,15 +21,11 @@ func TestPhtml(t *testing.T) {
 var _ = Describe("handling", func() {
 	var mux *http.ServeMux
 	var hs *example1v1phtml.MovrServiceHandlerSetM
-	var enc *form.Encoder
-	var dec *form.Decoder
+	var hss *example1v1phtml.MovrServiceHandlers
 
 	BeforeEach(func() {
-		enc = form.NewEncoder()
-		enc.SetTagName("json")
-		dec = form.NewDecoder()
-		dec.SetTagName("json")
-		hs = example1v1phtml.NewMovrServiceHandlerSetM(&MovrImpl1{}, dec, enc)
+		hs = example1v1phtml.NewMovrServiceHandlerSetM(&MovrImpl1{})
+		hss = example1v1phtml.NewMovrServiceHandlers(&MovrImpl1{})
 
 		mux = http.NewServeMux()
 		mux.Handle(hs.ShowOneUserPattern(), hs.ShowOneUserHandler())
@@ -44,9 +39,15 @@ var _ = Describe("handling", func() {
 	})
 
 	It("should generate url", func() {
-		uri, err := hs.ShowOneUserURL(&example1v1.ShowOneUserRequest{UserId: "1111092-9"})
+		uri1, err := hss.ShowOneUserURL("1111092-9", &example1v1.ShowOneUserRequest{
+			ShowAddress: true, UserId: "arg takes presedence",
+		})
 		Expect(err).ToNot(HaveOccurred())
-		Expect(uri).To(Equal(`/user/1111092-9`))
+		Expect(uri1).To(Equal(`/user/1111092-9?show_address=true`))
+
+		uri2, err := hss.ShowUserAddressURL("1111092-9", "addr1")
+		Expect(err).ToNot(HaveOccurred())
+		Expect(uri2).To(Equal(`/user/1111092-9/address/addr1`))
 	})
 })
 

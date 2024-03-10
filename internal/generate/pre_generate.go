@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"fmt"
 	"path/filepath"
+	"sort"
+	"strings"
 
 	"github.com/crewlinker/protohtml-go/internal/httppattern"
 	phtmlv1 "github.com/crewlinker/protohtml-go/phtml/v1"
@@ -39,15 +41,18 @@ func (p *Package) IsEmpty() bool {
 
 // Param describes a request parameter.
 type Param struct {
-	GoName   string
-	Source   phtmlv1.Source
-	DescKind protoreflect.Kind
+	GoName      string
+	Source      phtmlv1.Source
+	DescKind    protoreflect.Kind
+	GoBasicType string
 }
 
 // Request message.
 type Request struct {
 	GoIdent protogen.GoIdent
-	Params  map[protoreflect.Name]*Param
+	Params  map[string]*Param
+	// the path params ordered as they appear in the pattern
+	PathParamsAsInPattern []string
 }
 
 // Response message.
@@ -64,61 +69,93 @@ type Service struct {
 // Route describes a route that is served
 // by the generated handlers.
 type Route struct {
-	GoName      string
-	StrPattern  string
-	Pattern     *httppattern.Pattern
-	InputIdent  protogen.GoIdent
-	OutputIdent protogen.GoIdent
+	GoName        string
+	StrPattern    string
+	Pattern       *httppattern.Pattern
+	RequestIdent  protogen.GoIdent
+	ResponseIdent protogen.GoIdent
 }
 
 // AssertPathParamField asserts if the field description is suited for a path parameter.
-func AssertPathParamField(card protoreflect.Cardinality, kind protoreflect.Kind) error {
+func AssertPathParamField(card protoreflect.Cardinality, kind protoreflect.Kind) (string, error) {
 	if card != protoreflect.Optional {
-		return fmt.Errorf("path parameter field must have default cardinality, has: %q", card)
+		return "", fmt.Errorf("path parameter field must have default cardinality, has: %q", card)
 	}
 
 	switch kind {
-	case protoreflect.BoolKind, protoreflect.Int32Kind, protoreflect.Sint32Kind,
-		protoreflect.Uint32Kind, protoreflect.Int64Kind, protoreflect.Sint64Kind,
-		protoreflect.Uint64Kind, protoreflect.Sfixed32Kind, protoreflect.Fixed32Kind,
-		protoreflect.FloatKind, protoreflect.Sfixed64Kind, protoreflect.Fixed64Kind,
-		protoreflect.DoubleKind, protoreflect.StringKind, protoreflect.BytesKind:
-		return nil // all basic
+	case protoreflect.BoolKind:
+		return "bool", nil
+	case protoreflect.StringKind:
+		return "string", nil
+	case protoreflect.BytesKind:
+		return "[]byte", nil
+	case protoreflect.FloatKind:
+		return "float32", nil
+	case protoreflect.DoubleKind:
+		return "float64", nil
+	case protoreflect.Int32Kind, protoreflect.Sint32Kind:
+		return "int32", nil
+	case protoreflect.Uint32Kind, protoreflect.Fixed32Kind, protoreflect.Sfixed32Kind:
+		return "uint32", nil
+	case protoreflect.Int64Kind, protoreflect.Sint64Kind:
+		return "int64", nil
+	case protoreflect.Uint64Kind, protoreflect.Fixed64Kind, protoreflect.Sfixed64Kind:
+		return "uint64", nil
 	case protoreflect.MessageKind, protoreflect.EnumKind, protoreflect.GroupKind:
-		return fmt.Errorf("path parameter field must be basic kind, has: %q", kind)
+		return "", fmt.Errorf("path parameter field must be basic kind, has: %q", kind)
 	default:
-		return fmt.Errorf("unsupported kind for path parameter, got: %q", kind)
+		return "", fmt.Errorf("unsupported kind for path parameter, got: %q", kind)
 	}
 }
 
 // preGenRequest pre-generates any request message.
-func preGenRequest(_ *Package, inp *protogen.Message) (*Request, error) {
+func preGenRequest(_ *Package, inp *protogen.Message, pathParamsInPat []string) (*Request, error) {
 	req := &Request{
-		GoIdent: inp.GoIdent,
-		Params:  map[protoreflect.Name]*Param{},
+		GoIdent:               inp.GoIdent,
+		Params:                map[string]*Param{},
+		PathParamsAsInPattern: make([]string, len(pathParamsInPat)),
 	}
 
+	// copy slice or the sorting later will change the sorting as we keep it in the *Request
+	copy(req.PathParamsAsInPattern, pathParamsInPat)
+
+	var pathParams []string
 	for _, fld := range inp.Fields {
 		popts := paramOpts(fld)
 		if popts == nil {
 			continue // not a field for a parameter.
 		}
 
-		// path parameters have constraints we assert in the pre-generation phase.
-		if popts.GetSource() == phtmlv1.Source_SOURCE_PATH {
-			if err := AssertPathParamField(fld.Desc.Cardinality(), fld.Desc.Kind()); err != nil {
-				return nil, fmt.Errorf("[%s] failed to assert as path param: %w", fld.GoName, err)
-			}
-		}
-
-		req.Params[fld.Desc.Name()] = &Param{
+		param := &Param{
 			GoName:   fld.GoName,
 			Source:   popts.GetSource(),
 			DescKind: fld.Desc.Kind(),
 		}
+
+		// path parameters have constraints we assert in the pre-generation phase.
+		if popts.GetSource() == phtmlv1.Source_SOURCE_PATH {
+			goType, err := AssertPathParamField(fld.Desc.Cardinality(), fld.Desc.Kind())
+			if err != nil {
+				return nil, fmt.Errorf("[%s] failed to assert as path param: %w", fld.GoName, err)
+			}
+
+			// keep the path params to assert later
+			pathParams = append(pathParams, string(fld.Desc.Name()))
+			// keep the go type for a path param
+			param.GoBasicType = goType
+		}
+
+		req.Params[string(fld.Desc.Name())] = param
 	}
 
-	// @TODO assert that all path parameters that the pattern expect are defined.
+	// assert that all params in the pattern have a field in the request message.
+	sort.Strings(pathParams)
+	sort.Strings(pathParamsInPat)
+	joinedInMsg, joinedInPat := strings.Join(pathParams, ","), strings.Join(pathParamsInPat, ",")
+	if joinedInMsg != joinedInPat {
+		return nil, fmt.Errorf("parameters in pattern: %q don't match the path parameters defined in the request message: %q",
+			joinedInPat, joinedInMsg)
+	}
 
 	return req, nil
 }
@@ -133,7 +170,7 @@ func preGenRoute(pkg *Package, genMethod *protogen.Method, ropts *phtmlv1.RouteO
 
 	req, ok := pkg.Requests[genMethod.Input.GoIdent]
 	if !ok {
-		req, err = preGenRequest(pkg, genMethod.Input)
+		req, err = preGenRequest(pkg, genMethod.Input, httppattern.ParamNames(pat))
 		if err != nil {
 			return nil, fmt.Errorf("failed to pre-generate request from input: %w", err)
 		}
@@ -148,11 +185,11 @@ func preGenRoute(pkg *Package, genMethod *protogen.Method, ropts *phtmlv1.RouteO
 	}
 
 	return &Route{
-		GoName:      genMethod.GoName,
-		Pattern:     pat,
-		StrPattern:  ropts.GetPattern(),
-		InputIdent:  req.GoIdent,
-		OutputIdent: resp.GoIdent,
+		GoName:        genMethod.GoName,
+		Pattern:       pat,
+		StrPattern:    ropts.GetPattern(),
+		RequestIdent:  req.GoIdent,
+		ResponseIdent: resp.GoIdent,
 	}, nil
 }
 

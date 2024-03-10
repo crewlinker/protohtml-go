@@ -6,6 +6,7 @@ require (
 	github.com/a-h/templ v0.2.598
 	github.com/dave/jennifer v1.7.0
 	github.com/go-playground/form/v4 v4.2.1
+	github.com/iancoleman/strcase v0.3.0
 	github.com/magefile/mage v1.15.0
 	github.com/onsi/ginkgo/v2 v2.16.0
 	github.com/onsi/gomega v1.31.1
