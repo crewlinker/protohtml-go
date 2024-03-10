@@ -22,15 +22,18 @@ func TestGenerate(t *testing.T) {
 
 var _ = Describe("generate", func() {
 	It("should not generate any files if our options are not used at all", func() {
-		AssertTestByName("example_empty", BeNil(), HaveLen(0))
+		Expect(AssertTestByName("example_empty", "v1", BeNil())).To(BeEmpty())
 	})
 
-	DescribeTable("table", func(expErr OmegaMatcher, filef func(files Files)) {
+	DescribeTable("table", func(vname string, expErr OmegaMatcher, filef func(files Files)) {
 		name := CurrentSpecReport().LeafNodeText
-		files := AssertTestByName(name, expErr, Not(BeNil()))
+		files := AssertTestByName(name, vname, expErr)
 		filef(files)
 	},
-		Entry("example1", BeNil(), AssertFilesWithOnDisk),
+		Entry("example1", "v1", BeNil(), AssertFilesWithOnDisk),
+		Entry("example_err", "v1", MatchError(MatchRegexp(`field must be basic kind`)), AssertFilesEmpty),
+		Entry("example_err", "v2", MatchError(MatchRegexp(`path parameter field must have default cardinality`)), AssertFilesEmpty),
+		Entry("example_err", "v3", MatchError(MatchRegexp(`failed to parse route pattern`)), AssertFilesEmpty),
 	)
 })
 
@@ -44,14 +47,19 @@ func AssertFilesWithOnDisk(files Files) {
 	}
 }
 
+// AssertFilesEmpty asserts that there are nog generated files.
+func AssertFilesEmpty(files Files) {
+	Expect(files).To(BeEmpty())
+}
+
 // Files provides a more readable type for our tests.
 type Files map[string]*generate.Package
 
 // helper for asserting code generation for a test.
-func AssertTestByName(name string, expErr OmegaMatcher, expFiles OmegaMatcher) Files {
+func AssertTestByName(name, vdir string, expErr OmegaMatcher) Files {
 	opts, req := protogen.Options{}, pluginpb.CodeGeneratorRequest{}
 
-	snapshot, err := os.ReadFile(filepath.Join("..", "..", "examples", name, "v1", "phtml_request.bin"))
+	snapshot, err := os.ReadFile(filepath.Join("..", "..", "examples", name, vdir, "phtml_request.bin"))
 	Expect(err).ToNot(HaveOccurred())
 
 	Expect(proto.Unmarshal(snapshot, &req)).To(Succeed())
@@ -61,8 +69,6 @@ func AssertTestByName(name string, expErr OmegaMatcher, expFiles OmegaMatcher) F
 
 	actFiles, actErr := generate.Generate(plugin)
 	Expect(actErr).To(expErr)
-
-	Expect(actFiles).To(expFiles)
 
 	return actFiles
 }

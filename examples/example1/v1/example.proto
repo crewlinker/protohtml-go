@@ -12,6 +12,8 @@ message ShowOneUserRequest {
   bool show_address = 2 [(phtml.v1.param).source = SOURCE_QUERY];
   // nr_of_addrs from the form-encoded body.
   int64 nr_of_addrs = 3 [(phtml.v1.param).source = SOURCE_FORM];
+  // some other field, without a source
+  bytes some_data = 4;
 }
 
 // response from a single user.

@@ -39,8 +39,9 @@ func (p *Package) IsEmpty() bool {
 
 // Param describes a request parameter.
 type Param struct {
-	GoName string
-	Source phtmlv1.Source
+	GoName   string
+	Source   phtmlv1.Source
+	DescKind protoreflect.Kind
 }
 
 // Request message.
@@ -69,6 +70,26 @@ type Route struct {
 	OutputIdent protogen.GoIdent
 }
 
+// AssertPathParamFields asserts if the field description is suited for a path parameter.
+func AssertPathParamFields(card protoreflect.Cardinality, kind protoreflect.Kind) error {
+	if card != protoreflect.Optional {
+		return fmt.Errorf("path parameter field must have default cardinality, has: %q", card)
+	}
+
+	switch kind {
+	case protoreflect.BoolKind, protoreflect.Int32Kind, protoreflect.Sint32Kind,
+		protoreflect.Uint32Kind, protoreflect.Int64Kind, protoreflect.Sint64Kind,
+		protoreflect.Uint64Kind, protoreflect.Sfixed32Kind, protoreflect.Fixed32Kind,
+		protoreflect.FloatKind, protoreflect.Sfixed64Kind, protoreflect.Fixed64Kind,
+		protoreflect.DoubleKind, protoreflect.StringKind, protoreflect.BytesKind:
+		return nil // all basic
+	case protoreflect.MessageKind, protoreflect.EnumKind, protoreflect.GroupKind:
+		return fmt.Errorf("path parameter field must be basic kind, has: %q", kind)
+	default:
+		return fmt.Errorf("unsupported kind for path parameter, got: %q", kind)
+	}
+}
+
 // preGenRequest pre-generates any request message.
 func preGenRequest(_ *Package, inp *protogen.Message) (*Request, error) {
 	req := &Request{
@@ -82,17 +103,25 @@ func preGenRequest(_ *Package, inp *protogen.Message) (*Request, error) {
 			continue // not a field for a parameter.
 		}
 
+		// path parameters have constraints we assert in the pre-generation phase.
+		if popts.GetSource() == phtmlv1.Source_SOURCE_PATH {
+			if err := AssertPathParamFields(fld.Desc.Cardinality(), fld.Desc.Kind()); err != nil {
+				return nil, fmt.Errorf("[%s] failed to assert as path param: %w", fld.GoName, err)
+			}
+		}
+
 		req.Params[fld.Desc.Name()] = &Param{
-			GoName: fld.GoName,
-			Source: popts.GetSource(),
+			GoName:   fld.GoName,
+			Source:   popts.GetSource(),
+			DescKind: fld.Desc.Kind(),
 		}
 	}
 
 	return req, nil
 }
 
-// preGenMethod pre-generates any method.
-func preGenMethod(pkg *Package, genMethod *protogen.Method, ropts *phtmlv1.RouteOptions) (route *Route, err error) {
+// preGenRoute pre-generates any method.
+func preGenRoute(pkg *Package, genMethod *protogen.Method, ropts *phtmlv1.RouteOptions) (route *Route, err error) {
 	pat, err := httppattern.ParsePattern(ropts.GetPattern())
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse route pattern '%s': %w",
@@ -143,7 +172,7 @@ func preGenService(pkg *Package, genSvc *protogen.Service) (err error) {
 			pkg.Services[svc.GoName] = svc
 		}
 
-		svc.Routes[genMethod.GoName], err = preGenMethod(pkg, genMethod, ropts)
+		svc.Routes[genMethod.GoName], err = preGenRoute(pkg, genMethod, ropts)
 		if err != nil {
 			return fmt.Errorf("[%s] failed to pre-gen method: %w", genMethod.GoName, err)
 		}

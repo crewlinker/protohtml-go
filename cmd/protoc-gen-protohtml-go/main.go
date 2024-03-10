@@ -8,6 +8,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/crewlinker/protohtml-go/internal/generate"
 	"google.golang.org/protobuf/compiler/protogen"
@@ -29,8 +30,12 @@ func run(plugin *protogen.Plugin) error {
 
 	// write snapshots if enabled (for testing)
 	if *snapshots {
-		if err := snapshot(plugin.Request); err != nil {
+		if dir, err := snapshot(plugin.Request); err != nil {
 			return fmt.Errorf("failed to snapshot: %w", err)
+		} else if strings.HasPrefix(dir, "examples/example_err") {
+			log.Printf("skipping actual code generation for error example (%s)", dir)
+
+			return nil
 		}
 	}
 
@@ -51,12 +56,12 @@ func run(plugin *protogen.Plugin) error {
 }
 
 // snapshot requests in the directories the generate for.
-func snapshot(req *pluginpb.CodeGeneratorRequest) error {
+func snapshot(req *pluginpb.CodeGeneratorRequest) (string, error) {
 	const perms = 0o600
 
 	dir := filepath.Dir(req.GetFileToGenerate()[0])
 	if dir == "phtml/v1" {
-		return nil // skip for our own plugin options
+		return "", nil // skip for our own plugin options
 	}
 
 	fname := filepath.Join(dir, "phtml_request.bin")
@@ -64,12 +69,12 @@ func snapshot(req *pluginpb.CodeGeneratorRequest) error {
 
 	bin, err := proto.Marshal(req)
 	if err != nil {
-		return fmt.Errorf("failed to marshal request: %w", err)
+		return "", fmt.Errorf("failed to marshal request: %w", err)
 	}
 
 	if err := os.WriteFile(fname, bin, perms); err != nil {
-		return fmt.Errorf("failed to write snapshot file: %w", err)
+		return "", fmt.Errorf("failed to write snapshot file: %w", err)
 	}
 
-	return nil
+	return dir, nil
 }

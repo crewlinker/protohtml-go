@@ -1,0 +1,23 @@
+syntax = "proto3";
+
+package examples.example_err.v3;
+
+import "phtml/v1/options.proto";
+
+// example request.
+message ShowOneUserRequest {
+  // a path parameter must be a basic type
+  string user_id = 1 [(phtml.v1.param).source = SOURCE_PATH];
+}
+
+// example response.
+message ShowOneUserResponse {}
+
+// example service
+service ExampleService {
+  // example route
+  rpc ShowOneUser(ShowOneUserRequest) returns (ShowOneUserResponse) {
+    // invalid pattern
+    option (phtml.v1.route).pattern = "";
+  }
+}
