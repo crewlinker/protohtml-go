@@ -38,6 +38,10 @@ var _ = Describe("handling", func() {
 		Expect(resp.Body.String()).To(Equal(`<div>hello, John Doe</div>`))
 	})
 
+	It("should return the pattern", func() {
+		Expect(hss.ShowUserAddressPattern()).To(Equal(`/user/{user_id}/address/{addr_id}`))
+	})
+
 	It("should generate url", func() {
 		uri1, err := hss.ShowOneUserURL("1111092-9", &example1v1.ShowOneUserRequest{
 			ShowAddress: true, UserId: "arg takes presedence",

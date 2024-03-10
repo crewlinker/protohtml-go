@@ -34,6 +34,11 @@ func NewAnotherServiceHandlers(impl AnotherService) *AnotherServiceHandlers {
 	}
 }
 
+// ShowOneAddressPattern returns the pattern for the Go 1.22 mux.
+func (h *AnotherServiceHandlers) ShowOneAddressPattern() string {
+	return "/addr/{addr_id}"
+}
+
 // ShowOneAddressURL generates a url given the parameterse.
 func (h *AnotherServiceHandlers) ShowOneAddressURL(addrId string) (string, error) {
 	x := phtml.FirstInitOrPanic[v1.ShowOneAddressRequest]()
@@ -58,6 +63,16 @@ func NewMovrServiceHandlers(impl MovrService) *MovrServiceHandlers {
 		impl:  impl,
 		phtml: phtml.New(),
 	}
+}
+
+// ShowOneUserPattern returns the pattern for the Go 1.22 mux.
+func (h *MovrServiceHandlers) ShowOneUserPattern() string {
+	return "/user/{user_id}"
+}
+
+// ShowUserAddressPattern returns the pattern for the Go 1.22 mux.
+func (h *MovrServiceHandlers) ShowUserAddressPattern() string {
+	return "/user/{user_id}/address/{addr_id}"
 }
 
 // ShowOneUserURL generates a url given the parameterse.

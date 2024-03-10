@@ -156,6 +156,16 @@ func generateHandlerSets(file *File, pkg *Package) error {
 				Id("phtml"): Qual(phttppkg, "New").Call(),
 			})))
 
+		// generate the handlers method that returns the pattern
+		foreachKeySorted(svc.Routes, func(_ string, route *Route) {
+			file.Commentf(route.GoName + "Pattern returns the pattern for the Go 1.22 mux.")
+			file.Func().Params(Id("h").Op("*").Id(svc.GoName + "Handlers")).Id(route.GoName + "Pattern").
+				Params().
+				Params(String()).
+				Block(Return(Lit(route.StrPattern)))
+		})
+
+		// generate the method that generate urls.
 		if err := generateURLGeneration(file, pkg, svc); err != nil {
 			return fmt.Errorf("[%s] failed to generate url method: %w", svc.GoName, err)
 		}
