@@ -20,15 +20,13 @@ func TestPhtml(t *testing.T) {
 
 var _ = Describe("handling", func() {
 	var mux *http.ServeMux
-	var hs *example1v1phtml.MovrServiceHandlerSetM
 	var hss *example1v1phtml.MovrServiceHandlers
 
 	BeforeEach(func() {
-		hs = example1v1phtml.NewMovrServiceHandlerSetM(&MovrImpl1{})
 		hss = example1v1phtml.NewMovrServiceHandlers(&MovrImpl1{})
 
 		mux = http.NewServeMux()
-		mux.Handle(hs.ShowOneUserPattern(), hs.ShowOneUserHandler())
+		mux.Handle(hss.ShowOneUserPattern(), hss.ShowOneUserHandler())
 	})
 
 	It("should serve the generated handler", func() {
@@ -62,4 +60,8 @@ func (MovrImpl1) ShowOneUser(context.Context, *example1v1.ShowOneUserRequest) (*
 		FirstName: "John",
 		LastName:  "Doe",
 	}, nil
+}
+
+func (MovrImpl1) ShowUserAddress(ctx context.Context, req *example1v1.ShowUserAddressRequest) (*example1v1.ShowUserAddressResponse, error) {
+	return nil, nil
 }

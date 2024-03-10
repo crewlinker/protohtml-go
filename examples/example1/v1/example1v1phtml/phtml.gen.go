@@ -3,9 +3,11 @@
 package example1v1phtml
 
 import (
+	"context"
 	v1 "github.com/crewlinker/protohtml-go/examples/example1/v1"
 	httppattern "github.com/crewlinker/protohtml-go/internal/httppattern"
 	phtml "github.com/crewlinker/protohtml-go/phtml"
+	"net/http"
 )
 
 // parsedPatterns hold all parsed route patterns, done once when the package initializes
@@ -18,7 +20,9 @@ func init() {
 }
 
 // AnotherService describes the route handler implementation.
-type AnotherService interface{}
+type AnotherService interface {
+	ShowOneAddress(ctx context.Context, req *v1.ShowOneAddressRequest) (*v1.ShowOneAddressResponse, error)
+}
 
 // AnotherServiceHandlers provides methods for serving our routes.
 type AnotherServiceHandlers struct {
@@ -48,8 +52,31 @@ func (h *AnotherServiceHandlers) ShowOneAddressURL(addrId string) (string, error
 	return h.phtml.GenerateURL(x, parsedPatterns["AnotherService.ShowOneAddress"])
 }
 
+// ShowOneAddressHandler returns the http handler for the route.
+func (h *AnotherServiceHandlers) ShowOneAddressHandler() http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctx := r.Context()
+		var req v1.ShowOneAddressRequest
+		if err := h.phtml.ParseRequest(&req, r, "addr_id"); err != nil {
+			h.phtml.HandleParseRequestError(ctx, w, r, err)
+			return
+		}
+		resp, err := h.impl.ShowOneAddress(ctx, &req)
+		if err != nil {
+			h.phtml.HandleImplementationError(ctx, w, r, err)
+		}
+		if err := v1.ShowOneAddress(resp).Render(ctx, w); err != nil {
+			h.phtml.HandleParseRequestError(ctx, w, r, err)
+			return
+		}
+	})
+}
+
 // MovrService describes the route handler implementation.
-type MovrService interface{}
+type MovrService interface {
+	ShowOneUser(ctx context.Context, req *v1.ShowOneUserRequest) (*v1.ShowOneUserResponse, error)
+	ShowUserAddress(ctx context.Context, req *v1.ShowUserAddressRequest) (*v1.ShowUserAddressResponse, error)
+}
 
 // MovrServiceHandlers provides methods for serving our routes.
 type MovrServiceHandlers struct {
@@ -92,4 +119,44 @@ func (h *MovrServiceHandlers) ShowUserAddressURL(userId string, addrId string) (
 		x.AddrId = addrId
 	}
 	return h.phtml.GenerateURL(x, parsedPatterns["MovrService.ShowUserAddress"])
+}
+
+// ShowOneUserHandler returns the http handler for the route.
+func (h *MovrServiceHandlers) ShowOneUserHandler() http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctx := r.Context()
+		var req v1.ShowOneUserRequest
+		if err := h.phtml.ParseRequest(&req, r, "user_id"); err != nil {
+			h.phtml.HandleParseRequestError(ctx, w, r, err)
+			return
+		}
+		resp, err := h.impl.ShowOneUser(ctx, &req)
+		if err != nil {
+			h.phtml.HandleImplementationError(ctx, w, r, err)
+		}
+		if err := v1.ShowOneUser(resp).Render(ctx, w); err != nil {
+			h.phtml.HandleParseRequestError(ctx, w, r, err)
+			return
+		}
+	})
+}
+
+// ShowUserAddressHandler returns the http handler for the route.
+func (h *MovrServiceHandlers) ShowUserAddressHandler() http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctx := r.Context()
+		var req v1.ShowUserAddressRequest
+		if err := h.phtml.ParseRequest(&req, r, "user_id", "addr_id"); err != nil {
+			h.phtml.HandleParseRequestError(ctx, w, r, err)
+			return
+		}
+		resp, err := h.impl.ShowUserAddress(ctx, &req)
+		if err != nil {
+			h.phtml.HandleImplementationError(ctx, w, r, err)
+		}
+		if err := v1.ShowUserAddress(resp).Render(ctx, w); err != nil {
+			h.phtml.HandleParseRequestError(ctx, w, r, err)
+			return
+		}
+	})
 }

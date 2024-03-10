@@ -3,3 +3,11 @@ package example1v1
 templ ShowOneUser(data *ShowOneUserResponse) {
 	<div>hello, { data.FirstName } { data.LastName }</div>
 }
+
+templ ShowUserAddress(data *ShowUserAddressResponse) {
+	<div>use address</div>
+}
+
+templ ShowOneAddress(data *ShowOneAddressResponse) {
+	<div>one addr</div>
+}

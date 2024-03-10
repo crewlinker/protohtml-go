@@ -131,12 +131,98 @@ func generateURLGeneration(file *File, pkg *Package, svc *Service) error {
 	})
 }
 
+// generateHandler generates the code for generation URLs for a route.
+func generateHandler(file *File, pkg *Package, svc *Service) error {
+	return foreachKeySortedErr(svc.Routes, func(_ string, route *Route) error {
+		req, ok := pkg.Requests[route.RequestIdent]
+		if !ok {
+			panic("encountered unknown request ident: " + route.RequestIdent.String())
+		}
+
+		resp, ok := pkg.Responses[route.ResponseIdent]
+		if !ok {
+			panic("encountered unknown response ident: " + route.ResponseIdent.String())
+		}
+
+		// add path param names as lit args
+		parseRequestArgs := []Code{Op("&").Id("req"), Id("r")}
+		for _, name := range req.PathParamsAsInPattern {
+			parseRequestArgs = append(parseRequestArgs, Lit(name))
+		}
+
+		// setup the qualifier for the templ component
+		templPkg := string(resp.GoIdent.GoImportPath)
+		templName := route.GoName
+
+		// actual code block for the handler code.
+		block := []Code{
+			Id("ctx").Op(":=").Id("r").Dot("Context").Call(),
+			Var().Id("req").Qual(string(route.RequestIdent.GoImportPath), route.RequestIdent.GoName),
+
+			// parse request, if err handle
+			If(Id("err").Op(":=").Id("h").Dot("phtml").Dot("ParseRequest").Call(parseRequestArgs...),
+				Id("err").Op("!=").Nil()).Block(
+				Id("h").Dot("phtml").Dot("HandleParseRequestError").Call(Id("ctx"), Id("w"), Id("r"), Id("err")),
+				Return(),
+			),
+
+			// call impl, if err handle
+			List(Id("resp"), Id("err")).Op(":=").Id("h").Dot("impl").Dot(route.GoName).Call(Id("ctx"), Op("&").Id("req")),
+			If(Id("err").Op("!=").Nil()).Block(
+				Id("h").Dot("phtml").Dot("HandleImplementationError").Call(Id("ctx"), Id("w"), Id("r"), Id("err")),
+			),
+
+			// render response
+			If(Id("err").Op(":=").Qual(templPkg, templName).Call(Id("resp")).Dot("Render").Call(Id("ctx"), Id("w")),
+				Id("err").Op("!=").Nil()).Block(
+				Id("h").Dot("phtml").Dot("HandleParseRequestError").Call(Id("ctx"), Id("w"), Id("r"), Id("err")),
+				Return(),
+			),
+		}
+
+		// generate the method tha return the handler func
+		file.Commentf(route.GoName + "Handler returns the http handler for the route.")
+		file.Func().Params(Id("h").Op("*").Id(svc.GoName + "Handlers")).Id(route.GoName + "Handler").
+			Params().
+			Params(Qual("net/http", "Handler")).
+			Block(Return(Qual("net/http", "HandlerFunc").Call(
+				Func().Params(Id("w").Qual("net/http", "ResponseWriter"), Id("r").Op("*").Qual("net/http", "Request")).
+					Block(block...),
+			)))
+
+		return nil
+	})
+}
+
+// generateImplInterface generates the code for the impl interface.
+func generateImplInterface(file *File, _ *Package, svc *Service) error {
+	ifaceMembers := []Code{}
+	foreachKeySorted(svc.Routes, func(_ string, route *Route) {
+		// ShowOneUser(ctx context.Context, req *example1v1.ShowOneUserRequest) (*example1v1.ShowOneUserResponse, error)
+
+		ifaceMembers = append(ifaceMembers, Id(route.GoName).
+			Params(
+				Id("ctx").Qual("context", "Context"),
+				Id("req").Op("*").Qual(string(route.RequestIdent.GoImportPath), route.RequestIdent.GoName)).
+			Params(
+				Op("*").Qual(string(route.ResponseIdent.GoImportPath), route.ResponseIdent.GoName),
+				Error(),
+			))
+	})
+
+	file.Commentf(svc.GoName + " describes the route handler implementation.")
+	file.Type().Id(svc.GoName).Interface(ifaceMembers...)
+
+	return nil
+}
+
 // generateHandlerSets generates the handler sets.
 func generateHandlerSets(file *File, pkg *Package) error {
 	return foreachKeySortedErr(pkg.Services, func(_ string, svc *Service) error {
-		// implementation interface.
-		file.Commentf(svc.GoName + " describes the route handler implementation.")
-		file.Type().Id(svc.GoName).Interface()
+		// start by generating the interface that the developer needs to implement.
+		if err := generateImplInterface(file, pkg, svc); err != nil {
+			return fmt.Errorf("[%s] failed to generate implementation interface: %w", svc.GoName, err)
+		}
 
 		// handlers struct
 		file.Commentf(svc.GoName + "Handlers provides methods for serving our routes.")
@@ -167,6 +253,11 @@ func generateHandlerSets(file *File, pkg *Package) error {
 		// generate the method that generate urls.
 		if err := generateURLGeneration(file, pkg, svc); err != nil {
 			return fmt.Errorf("[%s] failed to generate url method: %w", svc.GoName, err)
+		}
+
+		// generate the handler methods
+		if err := generateHandler(file, pkg, svc); err != nil {
+			return fmt.Errorf("[%s] failed to generate handler method: %w", svc.GoName, err)
 		}
 
 		return nil

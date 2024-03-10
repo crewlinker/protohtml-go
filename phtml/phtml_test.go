@@ -22,7 +22,7 @@ var _ = Describe("phtml", func() {
 	var pht *phtml.PHTML
 
 	BeforeEach(func() {
-		phtml.New()
+		pht = phtml.New()
 	})
 
 	It("should allow parsing requests into protobuf message", func() {
