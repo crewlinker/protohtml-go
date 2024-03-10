@@ -41,7 +41,7 @@ var _ = Describe("generate", func() {
 // outside of the tests.
 func AssertFilesWithOnDisk(files Files) {
 	for name, pkg := range files {
-		data, err := os.ReadFile(filepath.Join("..", "..", strings.ReplaceAll(name, ".go", ".exp.go")))
+		data, err := os.ReadFile(filepath.Join("..", "..", strings.ReplaceAll(name, ".go", ".exp")))
 		Expect(err).ToNot(HaveOccurred())
 		Expect(pkg.Result.String()).To(Equal(string(data)))
 	}

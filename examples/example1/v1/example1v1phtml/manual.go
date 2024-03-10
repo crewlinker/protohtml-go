@@ -7,7 +7,6 @@ import (
 	"net/http"
 
 	example1v1 "github.com/crewlinker/protohtml-go/examples/example1/v1"
-	"github.com/crewlinker/protohtml-go/internal/httppattern"
 	"github.com/crewlinker/protohtml-go/phtml"
 )
 
@@ -34,7 +33,6 @@ func NewMovrServiceHandlerSetM(
 		dec:  dec,
 		enc:  enc,
 		// @TODO add "renderer" registry
-		// @TODO add "pattern" registry
 	}
 }
 
@@ -73,12 +71,7 @@ func (hs *MovrServiceHandlerSetM) ShowOneUserHandler() http.Handler {
 
 // @TODO at least partially generic, move to a shared package. @TODO, how to pass-in/handle optional parameters?
 func (hs *MovrServiceHandlerSetM) ShowOneUserURL(x *example1v1.ShowOneUserRequest) (string, error) {
-	pat, err := httppattern.ParsePattern(hs.ShowOneUserPattern()) // @TODO parse only once, at the package level?
-	if err != nil {
-		return "", fmt.Errorf("failed to parse pattern: %w", err)
-	}
-
-	uri, err := phtml.GenerateURL(hs.enc, x, pat)
+	uri, err := phtml.GenerateURL(hs.enc, x, parsedPatterns["MovrService.ShowOneUser"])
 	if err != nil {
 		return "", fmt.Errorf("faile to generate URL: %w", err)
 	}

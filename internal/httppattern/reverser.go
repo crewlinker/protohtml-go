@@ -8,6 +8,16 @@ import (
 // Pattern exposes the private type /net/http.pattern.
 type Pattern pattern
 
+// MustParsePattern parses the pattern but panics if it fails.
+func MustParsePattern(s string) *Pattern {
+	pat, err := ParsePattern(s)
+	if err != nil {
+		panic(fmt.Sprintf("httpattern: failed to parse pattern %q: %v", s, err))
+	}
+
+	return pat
+}
+
 // ParsePattern parses 's' as a patterned route for Go 1.22's ServeMux.
 func ParsePattern(s string) (*Pattern, error) {
 	p, err := parsePattern(s)

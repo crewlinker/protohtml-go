@@ -42,6 +42,12 @@ var _ = Describe("handling", func() {
 
 		Expect(resp.Body.String()).To(Equal(`<div>hello, John Doe</div>`))
 	})
+
+	It("should generate url", func() {
+		uri, err := hs.ShowOneUserURL(&example1v1.ShowOneUserRequest{UserId: "1111092-9"})
+		Expect(err).ToNot(HaveOccurred())
+		Expect(uri).To(Equal(`/user/1111092-9`))
+	})
 })
 
 type MovrImpl1 struct{}

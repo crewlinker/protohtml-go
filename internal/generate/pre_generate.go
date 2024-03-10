@@ -65,13 +65,14 @@ type Service struct {
 // by the generated handlers.
 type Route struct {
 	GoName      string
+	StrPattern  string
 	Pattern     *httppattern.Pattern
 	InputIdent  protogen.GoIdent
 	OutputIdent protogen.GoIdent
 }
 
-// AssertPathParamFields asserts if the field description is suited for a path parameter.
-func AssertPathParamFields(card protoreflect.Cardinality, kind protoreflect.Kind) error {
+// AssertPathParamField asserts if the field description is suited for a path parameter.
+func AssertPathParamField(card protoreflect.Cardinality, kind protoreflect.Kind) error {
 	if card != protoreflect.Optional {
 		return fmt.Errorf("path parameter field must have default cardinality, has: %q", card)
 	}
@@ -105,7 +106,7 @@ func preGenRequest(_ *Package, inp *protogen.Message) (*Request, error) {
 
 		// path parameters have constraints we assert in the pre-generation phase.
 		if popts.GetSource() == phtmlv1.Source_SOURCE_PATH {
-			if err := AssertPathParamFields(fld.Desc.Cardinality(), fld.Desc.Kind()); err != nil {
+			if err := AssertPathParamField(fld.Desc.Cardinality(), fld.Desc.Kind()); err != nil {
 				return nil, fmt.Errorf("[%s] failed to assert as path param: %w", fld.GoName, err)
 			}
 		}
@@ -116,6 +117,8 @@ func preGenRequest(_ *Package, inp *protogen.Message) (*Request, error) {
 			DescKind: fld.Desc.Kind(),
 		}
 	}
+
+	// @TODO assert that all path parameters that the pattern expect are defined.
 
 	return req, nil
 }
@@ -147,6 +150,7 @@ func preGenRoute(pkg *Package, genMethod *protogen.Method, ropts *phtmlv1.RouteO
 	return &Route{
 		GoName:      genMethod.GoName,
 		Pattern:     pat,
+		StrPattern:  ropts.GetPattern(),
 		InputIdent:  req.GoIdent,
 		OutputIdent: resp.GoIdent,
 	}, nil

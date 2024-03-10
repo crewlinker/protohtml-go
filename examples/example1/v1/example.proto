@@ -26,11 +26,27 @@ message ShowOneUserResponse {
   string last_name = 2;
 }
 
+// Request to show user address
+message ShowUserAddressRequest {
+  // id of the user
+  string user_id = 1 [(phtml.v1.param).source = SOURCE_PATH];
+  // id of the address
+  string addr_id = 2 [(phtml.v1.param).source = SOURCE_PATH];
+}
+
+// Request to show user response
+message ShowUserAddressResponse {}
+
 // MovrService handles request for a fiction ride-sharing service. Taken from:
 // https://www.cockroachlabs.com/docs/stable/movr
 service MovrService {
   // Show one user renders a page for a single user
   rpc ShowOneUser(ShowOneUserRequest) returns (ShowOneUserResponse) {
-    option (phtml.v1.route).pattern = "/user/{id}";
+    option (phtml.v1.route).pattern = "/user/{user_id}";
+  }
+
+  // Show one user renders a page for a single user
+  rpc ShowUserAddress(ShowUserAddressRequest) returns (ShowUserAddressResponse) {
+    option (phtml.v1.route).pattern = "/user/{user_id}/address/{addr_id}";
   }
 }
