@@ -45,7 +45,7 @@ func (h *AnotherServiceHandlers) ShowOneAddressURL(addrId string) (string, error
 	{
 		x.AddrId = addrId
 	}
-	return phtml.GenerateURL(h.phtml.ValuesEncoder(), x, parsedPatterns["AnotherService.ShowOneAddress"])
+	return h.phtml.GenerateURL(x, parsedPatterns["AnotherService.ShowOneAddress"])
 }
 
 // MovrService describes the route handler implementation.
@@ -81,7 +81,7 @@ func (h *MovrServiceHandlers) ShowOneUserURL(userId string, opt ...*v1.ShowOneUs
 	{
 		x.UserId = userId
 	}
-	return phtml.GenerateURL(h.phtml.ValuesEncoder(), x, parsedPatterns["MovrService.ShowOneUser"])
+	return h.phtml.GenerateURL(x, parsedPatterns["MovrService.ShowOneUser"])
 }
 
 // ShowUserAddressURL generates a url given the parameterse.
@@ -91,5 +91,5 @@ func (h *MovrServiceHandlers) ShowUserAddressURL(userId string, addrId string) (
 		x.UserId = userId
 		x.AddrId = addrId
 	}
-	return phtml.GenerateURL(h.phtml.ValuesEncoder(), x, parsedPatterns["MovrService.ShowUserAddress"])
+	return h.phtml.GenerateURL(x, parsedPatterns["MovrService.ShowUserAddress"])
 }

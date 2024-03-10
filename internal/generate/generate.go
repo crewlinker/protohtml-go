@@ -121,8 +121,7 @@ func generateURLGeneration(file *File, pkg *Package, svc *Service) error {
 				// assing path params from method arguments
 				Block(assignCode...),
 				// call the shared GenerateURL method
-				Return(Qual(phttppkg, "GenerateURL").Call(
-					Id("h").Dot("phtml").Dot("ValuesEncoder").Call(),
+				Return(Id("h").Dot("phtml").Dot("GenerateURL").Call(
 					Id("x"),
 					Id(parsedPatternsVarName).Index(Lit(parsedPatternsKey(svc, route))),
 				)),

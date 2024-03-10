@@ -39,24 +39,19 @@ func (hs *MovrServiceHandlerSetM) ShowOneUserHandler() http.Handler {
 
 		var req example1v1.ShowOneUserRequest
 
-		if err := phtml.ParseRequest(hs.base.ValuesDecoder(), &req, r, "user_id"); err != nil {
-			// @TODO configure "bad request" error handler (or type)
-			http.Error(w, err.Error(), http.StatusBadRequest)
+		if err := hs.base.ParseRequest(&req, r, "user_id"); err != nil {
+			hs.base.HandleParseRequestError(ctx, w, r, err)
 			return
 		}
 
 		resp, err := hs.impl.ShowOneUser(ctx, &req)
 		if err != nil {
-			//@ TODO configure "server error" error handler (or type)
-			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-
+			hs.base.HandleImplementationError(ctx, w, r, err)
 			return
 		}
 
 		if err := example1v1.ShowOneUser(resp).Render(ctx, w); err != nil {
-			//@ TODO configure "server error" error handler (or type) for rendering errors
-			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-
+			hs.base.HandleRenderResponseError(ctx, w, r, err)
 			return
 		}
 	})
@@ -68,7 +63,7 @@ func (hs *MovrServiceHandlerSetM) ShowOneUserURL(userId string, xs ...*example1v
 
 	x.UserId = userId
 
-	uri, err := phtml.GenerateURL(hs.base.ValuesEncoder(), x, parsedPatterns["MovrService.ShowOneUser"])
+	uri, err := hs.base.GenerateURL(x, parsedPatterns["MovrService.ShowOneUser"])
 	if err != nil {
 		return "", fmt.Errorf("failed to generate URL: %w", err)
 	}

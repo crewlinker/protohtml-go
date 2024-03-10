@@ -43,8 +43,8 @@ func FirstInitOrPanic[T any](xs ...*T) *T {
 	return x
 }
 
-// ParseRequest parses a requests's req.PostForm into a protobuf message 'msg'.
-func ParseRequest(
+// parseRequest parses a requests's req.PostForm into a protobuf message 'msg'.
+func parseRequest(
 	dec ValuesDecoder,
 	msg proto.Message,
 	req *http.Request,
@@ -65,8 +65,8 @@ func ParseRequest(
 	return nil
 }
 
-// GenerateURL will turn a request proto message into a url.
-func GenerateURL(
+// generateURL will turn a request proto message into a url.
+func generateURL(
 	enc ValuesEncoder,
 	msg any,
 	pat *httppattern.Pattern,
