@@ -6,8 +6,8 @@ import (
 	"testing"
 
 	example1v1 "github.com/crewlinker/protohtml-go/examples/example1/v1"
-	"github.com/crewlinker/protohtml-go/internal/httppattern"
 	"github.com/crewlinker/protohtml-go/phtml"
+	"github.com/crewlinker/protohtml-go/phtml/httppattern"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )

@@ -4,7 +4,7 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/crewlinker/protohtml-go/internal/httppattern"
+	"github.com/crewlinker/protohtml-go/phtml/httppattern"
 	"github.com/go-playground/form/v4"
 	"google.golang.org/protobuf/proto"
 )

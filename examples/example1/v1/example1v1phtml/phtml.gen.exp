@@ -5,8 +5,8 @@ package example1v1phtml
 import (
 	"context"
 	v1 "github.com/crewlinker/protohtml-go/examples/example1/v1"
-	httppattern "github.com/crewlinker/protohtml-go/internal/httppattern"
 	phtml "github.com/crewlinker/protohtml-go/phtml"
+	httppattern "github.com/crewlinker/protohtml-go/phtml/httppattern"
 	"net/http"
 )
 

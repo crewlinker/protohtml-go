@@ -7,7 +7,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/crewlinker/protohtml-go/internal/httppattern"
+	"github.com/crewlinker/protohtml-go/phtml/httppattern"
 	phtmlv1 "github.com/crewlinker/protohtml-go/phtml/v1"
 	"google.golang.org/protobuf/compiler/protogen"
 	"google.golang.org/protobuf/reflect/protoreflect"

@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"net/url"
 
-	"github.com/crewlinker/protohtml-go/internal/httppattern"
+	"github.com/crewlinker/protohtml-go/phtml/httppattern"
 	"google.golang.org/protobuf/proto"
 )
 

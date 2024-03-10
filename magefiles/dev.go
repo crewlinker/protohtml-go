@@ -59,9 +59,9 @@ func (Dev) Generate() error {
 		return fmt.Errorf("failed to generate protobuf: %w", err)
 	}
 
-	// generate rpc
+	// generate templ code
 	if err := sh.Run("templ", "generate"); err != nil {
-		return fmt.Errorf("failed to generate protobuf: %w", err)
+		return fmt.Errorf("failed to generate templ: %w", err)
 	}
 
 	return nil

@@ -19,7 +19,7 @@ const (
 )
 
 const (
-	httpatternpkg = "github.com/crewlinker/protohtml-go/internal/httppattern"
+	httpatternpkg = "github.com/crewlinker/protohtml-go/phtml/httppattern"
 	phttppkg      = "github.com/crewlinker/protohtml-go/phtml"
 )
 

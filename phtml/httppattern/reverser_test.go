@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/crewlinker/protohtml-go/internal/httppattern"
+	"github.com/crewlinker/protohtml-go/phtml/httppattern"
 )
 
 func TestReversing(t *testing.T) {
