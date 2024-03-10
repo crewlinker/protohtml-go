@@ -3,6 +3,8 @@ package phtml.v1;
 
 import "google/protobuf/descriptor.proto";
 
+option go_package = "github.com/crewlinker/protohtml-go/phtml/v1;phtmlv1";
+
 // options for defining a route.
 message TemplOptions {
   // name of the component constructor function.
