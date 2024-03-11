@@ -57,7 +57,9 @@ type Request struct {
 
 // Response message.
 type Response struct {
-	GoIdent protogen.GoIdent
+	GoIdent        protogen.GoIdent
+	TemplCompPkg   string
+	TemplCompIdent string
 }
 
 // Service groups a number of routes.
@@ -160,6 +162,27 @@ func preGenRequest(_ *Package, inp *protogen.Message, pathParamsInPat []string) 
 	return req, nil
 }
 
+// preGenResponse pre-generates any Response message.
+func preGenResponse(_ *Package, out *protogen.Message) (*Response, error) {
+	topts := templOpts(out)
+
+	resp := &Response{
+		GoIdent:        out.GoIdent,
+		TemplCompPkg:   string(out.GoIdent.GoImportPath),
+		TemplCompIdent: topts.GetComponent(),
+	}
+
+	if compPkg := topts.GetComponentPackage(); compPkg != "" {
+		resp.TemplCompPkg = compPkg
+	}
+
+	if resp.TemplCompIdent == "" {
+		return nil, fmt.Errorf("[%s] must define a templ component for rendering", out.GoIdent)
+	}
+
+	return resp, nil
+}
+
 // preGenRoute pre-generates any method.
 func preGenRoute(pkg *Package, genMethod *protogen.Method, ropts *phtmlv1.RouteOptions) (route *Route, err error) {
 	pat, err := httppattern.ParsePattern(ropts.GetPattern())
@@ -180,7 +203,11 @@ func preGenRoute(pkg *Package, genMethod *protogen.Method, ropts *phtmlv1.RouteO
 
 	resp, ok := pkg.Responses[genMethod.Output.GoIdent]
 	if !ok {
-		resp = &Response{GoIdent: genMethod.Output.GoIdent}
+		resp, err = preGenResponse(pkg, genMethod.Output)
+		if err != nil {
+			return nil, fmt.Errorf("failed to pre-generate response from output: %w", err)
+		}
+
 		pkg.Responses[genMethod.Output.GoIdent] = resp
 	}
 

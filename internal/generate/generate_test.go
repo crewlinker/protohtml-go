@@ -35,6 +35,7 @@ var _ = Describe("generate", func() {
 		Entry("example_err", "v2", MatchError(MatchRegexp(`path parameter field must have default cardinality`)), AssertFilesEmpty),
 		Entry("example_err", "v3", MatchError(MatchRegexp(`failed to parse route pattern`)), AssertFilesEmpty),
 		Entry("example_err", "v4", MatchError(MatchRegexp(`don't match the path parameters defined in the request message`)), AssertFilesEmpty),
+		Entry("example_err", "v5", MatchError(MatchRegexp(` must define a templ component for rendering`)), AssertFilesEmpty),
 	)
 })
 

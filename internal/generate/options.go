@@ -22,6 +22,21 @@ func routeOpts(m *protogen.Method) *phtmlv1.RouteOptions {
 	return ext
 }
 
+// templOpts returns our plugin specific response options.
+func templOpts(m *protogen.Message) *phtmlv1.TemplOptions {
+	opts, hasOpts := m.Desc.Options().(*descriptorpb.MessageOptions)
+	if !hasOpts {
+		return nil
+	}
+
+	ext, hasOpts := proto.GetExtension(opts, phtmlv1.E_Templ).(*phtmlv1.TemplOptions)
+	if !hasOpts {
+		return nil
+	}
+
+	return ext
+}
+
 // paramOpts returns our plugin specific field options.
 func paramOpts(m *protogen.Field) *phtmlv1.ParamFieldOptions {
 	opts, hasOpts := m.Desc.Options().(*descriptorpb.FieldOptions)

@@ -150,10 +150,6 @@ func generateHandler(file *File, pkg *Package, svc *Service) error {
 			parseRequestArgs = append(parseRequestArgs, Lit(name))
 		}
 
-		// setup the qualifier for the templ component
-		templPkg := string(resp.GoIdent.GoImportPath)
-		templName := route.GoName
-
 		// actual code block for the handler code.
 		block := []Code{
 			Id("ctx").Op(":=").Id("r").Dot("Context").Call(),
@@ -172,8 +168,9 @@ func generateHandler(file *File, pkg *Package, svc *Service) error {
 				Id("h").Dot("phtml").Dot("HandleImplementationError").Call(Id("ctx"), Id("w"), Id("r"), Id("err")),
 			),
 
-			// render response
-			If(Id("err").Op(":=").Qual(templPkg, templName).Call(Id("resp")).Dot("Render").Call(Id("ctx"), Id("w")),
+			// render response, call Templ function.
+			If(Id("err").Op(":=").Qual(resp.TemplCompPkg, resp.TemplCompIdent).
+				Call(Id("resp")).Dot("Render").Call(Id("ctx"), Id("w")),
 				Id("err").Op("!=").Nil()).Block(
 				Id("h").Dot("phtml").Dot("HandleParseRequestError").Call(Id("ctx"), Id("w"), Id("r"), Id("err")),
 				Return(),

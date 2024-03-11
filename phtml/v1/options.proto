@@ -9,6 +9,8 @@ option go_package = "github.com/crewlinker/protohtml-go/phtml/v1;phtmlv1";
 message TemplOptions {
   // name of the component constructor function.
   optional string component = 1;
+  // name of the component package constructor function.
+  optional string component_package = 2;
 }
 
 // options for defining a route.

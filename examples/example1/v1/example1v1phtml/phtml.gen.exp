@@ -5,6 +5,7 @@ package example1v1phtml
 import (
 	"context"
 	v1 "github.com/crewlinker/protohtml-go/examples/example1/v1"
+	view "github.com/crewlinker/protohtml-go/examples/example1/view"
 	phtml "github.com/crewlinker/protohtml-go/phtml"
 	httppattern "github.com/crewlinker/protohtml-go/phtml/httppattern"
 	"net/http"
@@ -65,7 +66,7 @@ func (h *AnotherServiceHandlers) ShowOneAddressHandler() http.Handler {
 		if err != nil {
 			h.phtml.HandleImplementationError(ctx, w, r, err)
 		}
-		if err := v1.ShowOneAddress(resp).Render(ctx, w); err != nil {
+		if err := view.ShowOneAddress(resp).Render(ctx, w); err != nil {
 			h.phtml.HandleParseRequestError(ctx, w, r, err)
 			return
 		}
